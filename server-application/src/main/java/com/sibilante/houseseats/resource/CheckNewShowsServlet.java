@@ -13,9 +13,8 @@ import java.net.URLEncoder;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Properties;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
@@ -28,17 +27,13 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.FirebaseOptions;
-import com.google.firebase.messaging.AndroidConfig;
-import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.FirebaseMessagingException;
-import com.google.firebase.messaging.Message;
 import com.sibilante.houseseats.model.Show;
-import com.sibilante.houseseats.service.IgnoreShowInterface;
-import com.sibilante.houseseats.service.IgnoreShowService;
+import com.sibilante.houseseats.service.IgnoreShowRepository;
 
 @SuppressWarnings("serial")
 @WebServlet(name = "HelloAppEngine", urlPatterns = { "/checkNewShows" })
@@ -46,11 +41,12 @@ public class CheckNewShowsServlet extends HttpServlet {
 
 	private static final String LOGIN_URL = "https://lv.houseseats.com/member/index.bv";
 	private static final String SHOWS_URL = "https://lv.houseseats.com/member/ajax/upcoming-shows.bv?sortField=name";
-	private static final Logger logger = Logger.getLogger(CheckNewShowsServlet.class.getName());
+	private static final Logger logger = LoggerFactory.getLogger(CheckNewShowsServlet.class);
 	private static final String OLD_SHOWS_ATTRIBUTE = "oldShows";
-	private static IgnoreShowInterface ignoreShow = new IgnoreShowService();
-	private static final String TOPIC = "shows";
-	private final Properties properties = new Properties();
+	@Autowired
+	private IgnoreShowRepository ignoreShow;
+	@Autowired
+	private Environment properties;
 	private Instant lastFindShows;
 
 	@Override
@@ -59,16 +55,9 @@ public class CheckNewShowsServlet extends HttpServlet {
 		// Handle the cookies for the org.jsoup.Connection or URLConnectons
 		CookieHandler.setDefault(new CookieManager());
 		try {
-			InputStream appPropertiesStream = getServletContext().getResourceAsStream("/WEB-INF/app.properties");
-			properties.load(appPropertiesStream);
 			getServletContext().setAttribute(OLD_SHOWS_ATTRIBUTE, getHouseSeatsShows());
-			InputStream serviceAccountKey = getServletContext().getResourceAsStream("/WEB-INF/serviceAccountKey.json");
-			FirebaseOptions firebaseOptions = new FirebaseOptions.Builder()
-					.setCredentials(GoogleCredentials.fromStream(serviceAccountKey))
-					.build();
-			FirebaseApp.initializeApp(firebaseOptions);			
-		} catch (IOException e) {
-			logger.severe(e.getMessage());
+		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
 		}
 	}
 
@@ -91,15 +80,14 @@ public class CheckNewShowsServlet extends HttpServlet {
 						.filter(s -> !oldShows.contains(s))
 						.collect(Collectors.toList());
 			} catch (InterruptedException e) {
-				logger.severe(e.getMessage());
+				logger.error(e.getMessage(), e);
 			}
 		}
 
 		if (!newShows.isEmpty()) {
-			newShows.removeAll(ignoreShow.findAll());
+			newShows.removeAll((Collection<?>) ignoreShow.findAll());
 			for (Show newShow : newShows) {
 				sendTelegram(newShow);
-				sendFirebaseCloudMessage(newShow);
 			}
 		}
 
@@ -137,7 +125,7 @@ public class CheckNewShowsServlet extends HttpServlet {
 	
 			}
 		} catch (IOException e) {
-			logger.severe(e.getMessage());
+			logger.error(e.getMessage(),e );
 		}
 		lastFindShows = Instant.now();
 		return showList;
@@ -165,23 +153,7 @@ public class CheckNewShowsServlet extends HttpServlet {
 				sb.append(inputLine);
 			}
 		} catch (IOException e) {
-			logger.severe(e.getMessage());
-		}
-	}
-	
-	private void sendFirebaseCloudMessage(Show show) {
-		Message message = Message.builder()
-				.setAndroidConfig(AndroidConfig.builder()
-						.setPriority(AndroidConfig.Priority.HIGH)
-						.build())
-				.putData("id", Long.toString(show.getId()))
-			    .putData("name", show.getName())
-			    .setTopic(TOPIC)
-			    .build();
-		try {
-			FirebaseMessaging.getInstance().send(message);
-		} catch (FirebaseMessagingException e) {
-			logger.severe(e.getMessage());
+			logger.error(e.getMessage(), e);
 		}
 	}
 

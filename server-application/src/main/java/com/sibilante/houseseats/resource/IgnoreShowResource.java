@@ -1,47 +1,41 @@
 package com.sibilante.houseseats.resource;
 
-import java.util.List;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.GenericEntity;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.sibilante.houseseats.model.Show;
-import com.sibilante.houseseats.service.IgnoreShowInterface;
-import com.sibilante.houseseats.service.IgnoreShowService;
+import com.sibilante.houseseats.service.IgnoreShowRepository;
 
-@Path("/ignore/shows")
-@Produces(MediaType.APPLICATION_JSON)
+@RestController
+@RequestMapping("/rest/ignore/shows")
 public class IgnoreShowResource {
 	
-	private IgnoreShowInterface ignoreShow = new IgnoreShowService();
+	private static final Logger log = LoggerFactory.getLogger(IgnoreShowResource.class);
+	@Autowired
+	private IgnoreShowRepository ignoreShow;
 	
-	@GET
-    public Response getShows(){
-		List<Show> shows = ignoreShow.findAll();
-		GenericEntity<List<Show>> genericEntity = new GenericEntity<List<Show>>(shows) {};
-        return Response.ok(genericEntity).build();
+	@GetMapping
+    public Iterable<Show> all(){
+		log.info("Returning all shows");
+		return ignoreShow.findAll();
     }
 
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Show addShow(Show show){
-        ignoreShow.create(show);
-        return show;
+	@PostMapping
+    public Show addShow(@RequestBody Show show){
+        return ignoreShow.save(show);
     }
     
-    @DELETE
-    @Path("/{id}")
-    public void deleteShow(@PathParam("id")long id) {
-    	ignoreShow.delete(id);
+    @DeleteMapping("/{id}")
+    public void deleteShow(@PathVariable long id) {
+    	ignoreShow.deleteById(id);
     }
     
-    //TODO authentication using https://cloud.google.com/appengine/docs/standard/java/users/
 }

@@ -1,7 +1,7 @@
 package com.sibilante.houseseats.model;
 
-import com.googlecode.objectify.annotation.Entity;
-import com.googlecode.objectify.annotation.Id;
+import javax.persistence.Entity;
+import javax.persistence.Id;
 
 @Entity
 public class Show {

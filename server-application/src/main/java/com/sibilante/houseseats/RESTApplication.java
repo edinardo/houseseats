@@ -1,25 +1,17 @@
 package com.sibilante.houseseats;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.web.servlet.ServletComponentScan;
 
 import com.sibilante.houseseats.resource.IgnoreShowResource;
 
-@ApplicationPath("/rest")
-public class RESTApplication extends Application {
+@ServletComponentScan
+@SpringBootApplication(scanBasePackageClasses = IgnoreShowResource.class)
+public class RESTApplication {
 
-	public RESTApplication() {
-		super();
-	}
-
-	@Override
-	public Set<Class<?>> getClasses() {
-		final Set<Class<?>> resources = new HashSet<Class<?>>( );
-        resources.add(IgnoreShowResource.class);
-        return resources;
+	public static void main(String[] args) throws Exception {
+		SpringApplication.run(RESTApplication.class, args);
 	}
 
 }

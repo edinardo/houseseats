@@ -1,0 +1,1 @@
+OpenTelemetry sent via https://docs.oracle.com/en-us/iaas/application-performance-monitoring/doc/configure-open-source-tracing-systems.html and https://javiermugueta.blog/2022/02/16/instrumenting-an-ios-application-with-oci-apm-tracing-with-opentelemetry-swift/
